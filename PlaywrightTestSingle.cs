@@ -10,7 +10,8 @@ namespace PlaywrightTests
     [TestFixture]
     public class PlaywrightTestSingle
     {
-        private IBrowser? browser;
+        private IBrowserContext? _browserContext;
+        private IPage? _page;
 
         [Test]
         public async Task RunPlaywrightTest()
@@ -23,97 +24,108 @@ namespace PlaywrightTests
             string? user = TestContext.Parameters.Get("LT_USERNAME", null);
             string? accessKey = TestContext.Parameters.Get("LT_ACCESS_KEY", null);
             string? platform = TestContext.Parameters.Get("PLATFORM", null);
-            Console.WriteLine($"platform = {platform}");
+            Console.WriteLine($"Platform = {platform}");
             string? browserType = TestContext.Parameters.Get("BROWSER_NAME", null);
-            Console.WriteLine($"browserType = {browserType}");
+            Console.WriteLine($"Browser Type = {browserType}");
             string? browserVersion = TestContext.Parameters.Get("BROWSER_VERSION", null);
             string? cdpUrlBase = TestContext.Parameters.Get("CDP_URL_BASE", null);
 
             // Validate mandatory parameters
-            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(accessKey)
-                || string.IsNullOrEmpty(cdpUrlBase))
+            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(cdpUrlBase))
             {
                 throw new ArgumentException("Required parameters are missing in the run settings.");
             }
 
             // Set capabilities
-            Dictionary<string, object?> capabilities = new Dictionary<string, object?>();
-            Dictionary<string, string?> ltOptions = new Dictionary<string, string?>
+            var capabilities = new Dictionary<string, object?>
             {
-                { "name", "Playwright Test" },
-                { "build", "Playwright C-Sharp tests" },
-                { "platform", platform },
-                { "user", user },
-                { "accessKey", accessKey }
+                { "browserName", browserType },
+                { "browserVersion", browserVersion },
+                { "LT:Options", new Dictionary<string, string?>
+                    {
+                        { "name", "Playwright Test" },
+                        { "build", "Playwright C-Sharp tests" },
+                        { "platform", platform },
+                        { "user", user },
+                        { "accessKey", accessKey }
+                    }
+                }
             };
 
-            capabilities.Add("browserName", browserType);
-            capabilities.Add("browserVersion", browserVersion);
-            capabilities.Add("LT:Options", ltOptions);
-
             string capabilitiesJson = JsonConvert.SerializeObject(capabilities);
-            string cdpUrl = cdpUrlBase + "?capabilities=" + Uri.EscapeDataString(capabilitiesJson);
+            string cdpUrl = $"{cdpUrlBase}?capabilities={Uri.EscapeDataString(capabilitiesJson)}";
 
             Console.WriteLine($"CDP URL: {cdpUrl}");
 
             // Connect to LambdaTest
-            // Conditional browser instantiation
-            if (browserType != null)
+            IBrowser? browser = null;
+
+            try
             {
-                if (browserType.ToLower() == "chromium" || browserType.ToLower() == "chrome")
+                if (browserType?.ToLower() == "chromium" || browserType?.ToLower() == "chrome")
                 {
-                    TestContext.WriteLine("Using Chromium for browser type.");
                     browser = await playwright.Chromium.ConnectAsync(cdpUrl);
+                }
+                else if (browserType?.ToLower() == "firefox")
+                {
+                    browser = await playwright.Firefox.ConnectAsync(cdpUrl);
+                }
+                else if (browserType?.ToLower() == "webkit")
+                {
+                    browser = await playwright.Webkit.ConnectAsync(cdpUrl);
                 }
                 else
                 {
-                    TestContext.WriteLine("Using browser type from playwright[browserType].");
-                    var browserTypeInstance = browserType switch
-                    {
-                        "firefox" => playwright.Firefox,
-                        "webkit" => playwright.Webkit,
-                        _ => null
-                    };
-                    browser = await playwright[browserType].ConnectAsync(cdpUrl);
+                    throw new ArgumentException($"Unsupported browser type: {browserType}");
+                }
 
-                }
-                var context = await browser.NewContextAsync();
-                var page = await context.NewPageAsync();
+                // Create a new browser context
+                _browserContext = await browser.NewContextAsync();
 
-                try
-                {
-                    await page.GotoAsync("https://duckduckgo.com", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-                    await page.WaitForSelectorAsync("[name='q']");
-                    await page.Locator("[name='q']").ClickAsync();
-                    await page.FillAsync("[name='q']", "LambdaTest");
-                    await page.Keyboard.PressAsync("Enter");
-                    await page.WaitForURLAsync(url => url.Contains("q=LambdaTest"), new PageWaitForURLOptions { Timeout = 10000 });
-                    var title = await page.TitleAsync();
+                // Create a new page within the browser context
+                _page = await _browserContext.NewPageAsync();
 
-                    if (title.Contains("LambdaTest at DuckDuckGo"))
-                    {
-                        await SetTestStatus1("passed", "Title matched", page);
-                    }
-                    else
-                    {
-                        await SetTestStatus1("failed", "Title not matched", page);
-                    }
-                }
-                catch (Exception err)
+                // Perform actions
+                await _page.GotoAsync("https://duckduckgo.com", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+                await _page.WaitForSelectorAsync("[name='q']");
+                await _page.Locator("[name='q']").ClickAsync();
+                await _page.FillAsync("[name='q']", "LambdaTest");
+                await _page.Keyboard.PressAsync("Enter");
+                await _page.WaitForURLAsync(url => url.Contains("q=LambdaTest"), new PageWaitForURLOptions { Timeout = 10000 });
+
+                var title = await _page.TitleAsync();
+
+                if (title.Contains("LambdaTest at DuckDuckGo"))
                 {
-                    await SetTestStatus1("failed", err.Message, page);
+                    await SetTestStatus("passed", "Title matched");
                 }
-                finally
+                else
                 {
-                    await context.CloseAsync();
-                    await browser.CloseAsync();
+                    await SetTestStatus("failed", "Title not matched");
                 }
+            }
+            catch (Exception ex)
+            {
+                if (_page != null)
+                {
+                    await SetTestStatus("failed", ex.Message);
+                }
+                throw;
+            }
+            finally
+            {
+                // Clean up
+                if (_browserContext != null) await _browserContext.CloseAsync();
+                if (browser != null) await browser.CloseAsync();
             }
         }
 
-        public static async Task SetTestStatus1(string status, string remark, IPage page)
+        private async Task SetTestStatus(string status, string remark)
         {
-            await page.EvaluateAsync("_ => {}", $"lambdatest_action: {{\"action\": \"setTestStatus\", \"arguments\": {{\"status\":\"{status}\", \"remark\": \"{remark}\"}}}}");
+            if (_page != null)
+            {
+                await _page.EvaluateAsync("_ => {}", $"lambdatest_action: {{\"action\": \"setTestStatus\", \"arguments\": {{\"status\":\"{status}\", \"remark\": \"{remark}\"}}}}");
+            }
         }
     }
 }
