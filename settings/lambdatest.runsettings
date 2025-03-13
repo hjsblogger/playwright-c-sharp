@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <TestRunParameters>
-    <Parameter name="LT_USERNAME" value="himanshuj" />
-    <Parameter name="LT_ACCESS_KEY" value="abc" />
+    <Parameter name="LT_USERNAME" value="himanshujlambdatest" />
+    <Parameter name="LT_ACCESS_KEY" value="URsVCP7vFs0pY9QVs016neJhZ2BuynstLaGYYzuZzdHB7r8x8s" />
     <Parameter name="BROWSER_NAME" value="Chrome" />
-    <Parameter name="BROWSER_VERSION" value="latest-4" />
+    <Parameter name="BROWSER_VERSION" value="latest-1" />
     <Parameter name="PLATFORM" value="Windows 11" />
     <Parameter name="CDP_URL_BASE" value="wss://cdp.lambdatest.com/playwright" />
   </TestRunParameters>
