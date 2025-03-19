@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <TestRunParameters>
+    <Parameter name="LT_USERNAME" value="LT_USERNAME" />
+    <Parameter name="LT_ACCESS_KEY" value="LT_ACCESS_KEY" />
+    <Parameter name="BROWSER_NAME" value="pw-webkit" />
+    <Parameter name="BROWSER_VERSION" value="latest" />
+    <Parameter name="PLATFORM" value="Windows 10" />
+    <Parameter name="CDP_URL_BASE" value="wss://cdp.lambdatest.com/playwright" />
+  </TestRunParameters>
+</RunSettings>

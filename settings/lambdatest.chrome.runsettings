@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <TestRunParameters>
-    <Parameter name="LT_USERNAME" value="himanshujlambdatest" />
-    <Parameter name="LT_ACCESS_KEY" value="URsVCP7vFs0pY9QVs016neJhZ2BuynstLaGYYzuZzdHB7r8x8s" />
+    <Parameter name="LT_USERNAME" value="LT_USERNAME" />
+    <Parameter name="LT_ACCESS_KEY" value="LT_ACCESS_KEY" />
     <Parameter name="BROWSER_NAME" value="Chrome" />
     <Parameter name="BROWSER_VERSION" value="latest-1" />
     <Parameter name="PLATFORM" value="Windows 11" />
