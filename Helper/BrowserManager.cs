@@ -1,6 +1,4 @@
 using Microsoft.Playwright;
-// using System.Collections.Generic;
-// using System.Threading.Tasks;
 
 namespace PlaywrightTest.Helper
 {
