@@ -290,13 +290,15 @@ namespace PlaywrightTests
                 {
                     { "browserName", browserType },
                     { "browserVersion", browserVersion },
-                    { "LT:Options", new Dictionary<string, string?>
+                    /* { "LT:Options", new Dictionary<string, string?> */
+                    { "LT:Options", new Dictionary<string, object?>
                         {
                             { "name", testName }, // Unique name per test
                             { "build", "Playwright C-Sharp tests" },
                             { "platform", platform },
                             { "user", user },
                             { "accessKey", accessKey },
+                            { "useSpecificBundleVersion", true }
                         }
                     }
                 };
